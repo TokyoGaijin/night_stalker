@@ -33,6 +33,74 @@ class Pixel:
         pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
 
 
+class BackState(Enum):
+    CITY = 0
+    MOUNTAINS = 1
+
+class Background:
+    def __init__(self):
+        startX, startY = 800, 300 - 40
+        self.back_images = [["--------------------------------------------------",
+                             "--------------------------------------------------",
+                             "--------------------------------------00----------",
+                             "----------------------------00--------00----------",
+                             "--------------------------00--00------00----------",
+                             "-------------------------00----00-----00----------",
+                             "------------------------00------00----00----------",
+                             "---------------0000000000--0--0--00000000000------",
+                             "---------------0-------00--0--0--00--------0------",
+                             "---------------0-0--0--00--------00--0--0--0------",
+                             "---------------0-0--0--00--0--0--00--0--0--0------",
+                             "000000000------0-------00--------00--------0000000",
+                             "0-------0------0-0--0--00--0--0--00--0--0--0-0-0-0",
+                             "0-0-0-0-0------0-0--0--00--0--0--00--0--0--0-0-0-0",
+                             "0-0-0-0-00000000-------00--------00--------0-----0",
+                             "0-------0------0-0--0--00--0--0--00--0--0--0-0-0-0",
+                             "0-0-0-0-0-0--0-0-0--0--00--0--0--00--0--0--0-0-0-0",
+                             "0-0-0-0-0-0--0-0-------00--------00--------0-----0",
+                             "0-------0------0-0--0--00--0--0--00--0--0--0-0-0-0",
+                             "0-0-0-0-0-0--0-0-0--0--00--0--0--00--0--0--0-0-0-0"],
+
+                            ["--------------------------------------------------",
+                             "-----------------------o--------------------------",
+                             "--------------0------00-00------0-----------------",
+                             "------00-----0-0----0-----0---00-0----------------",
+                             "-----0--0---0---0--0-------000----0----00---------",
+                             "--- 0----0-0-----00---------0------00-0--0--------",
+                             "---0------0------0-----------0-------0----0-------",
+                             "--0--------0----0-------------0-----0------0--00--",
+                             "-0----------0--0---------------0--0---------00--0-",
+                             "0------------00-----------------0------------0---0",]]
+
+        self.current_state = BackState.MOUNTAINS
+
+        self.city_image = []
+        self.mount_image = []
+
+        def build_images():
+            x, y = startX, startY
+            for struct in self.back_images[0]:
+                for col in struct:
+                    if col == "0":
+                        self.city_image.append(Pixel(x, y))
+                    x += 2
+                y += 2
+                x = startX
+
+            y = startY
+
+            for rock in self.back_images[1]:
+                for col in rock:
+                    if col == "0":
+                        self.mount_image.append(Pixel(x, y))
+                    x += 2
+                y += 2
+                x = startX
+
+        build_images()
+
+
+
 class Bullet:
     def __init__(self, startX, startY):
         self.rect = pygame.Rect(startX, startY, 10, 2)
@@ -226,9 +294,6 @@ pygame.display.set_caption(NAME)
 player = NightStalker(400, 300)
 
 
-killer_bullets = [Bullet(random.randint(800, 1000), random.randint(0, 580)) for i in range(40)]
-
-
 
 
 def die():
@@ -238,9 +303,8 @@ def die():
         sys.exit(1)
 
 def draw():
-    for bullet in killer_bullets:
-        bullet.draw()
-
+    # Horizon Line
+    pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 300, 800, 2))
     player.draw()
 
 def update():
@@ -253,16 +317,7 @@ def update():
     draw()
 
     # Objects' update methods go here
-    for bullet in killer_bullets:
-        bullet.update()
-        bullet.SPEED = -8
-        if bullet.rect.x <= -10:
-            bullet.rect.x = random.randint(800, 1000)
-            bullet.rect.y = random.randint(0, 500)
-        if bullet.rect.colliderect(player.hit_box):
-            player.get_hit()
-            bullet.rect.x = random.randint(800, 1000)
-            bullet.rect.y = random.randint(0, 500)
+
 
     player.update()
     pygame.display.update()
