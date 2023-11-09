@@ -99,6 +99,21 @@ class Background:
 
         build_images()
 
+    def draw(self):
+        if self.current_state == BackState.MOUNTAINS:
+            for i in self.mount_image:
+                i.rect.draw()
+        if self.current_state == BackState.CITY:
+            for i in self.city_image:
+                i.rect.draw()
+
+    def update(self):
+        if self.current_state == BackState.MOUNTAINS:
+            pass
+        if self.current_state == BackState.CITY:
+            pass
+
+        
 
 
 class Bullet:
