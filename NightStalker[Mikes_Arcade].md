@@ -14,3 +14,5 @@ Game will be controlled by `W` `A` `S` `D` keys for movement, `SPACE` to fire.
 
 Car will automatically transform once it reaches a `y` position at the middle of the screen (`y: 200`)
 
+Player can fire up to 3 bullets before having to wait until it resets. Autofire is also disabled in this game.
+
