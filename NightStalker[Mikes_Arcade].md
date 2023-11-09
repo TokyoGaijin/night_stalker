@@ -10,5 +10,7 @@ Game will have no color except for black and white.
 ---
 
 ## Game Controls
-Game will be controlled by `W` `A` `S` `D` keys for movement, `SPACE` to fire and `E` to transform while pressing `W`
+Game will be controlled by `W` `A` `S` `D` keys for movement, `SPACE` to fire.
+
+Car will automatically transform once it reaches a `y` position at the middle of the screen (`y: 200`)
 
