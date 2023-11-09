@@ -16,3 +16,15 @@ Car will automatically transform once it reaches a `y` position at the middle of
 
 Player can fire up to 3 bullets before having to wait until it resets. Autofire is also disabled in this game.
 
+---
+
+## Game Environment
+
+![Alt text](image.png)
+
+A general screenshot.
+
+![Alt text](image-1.png)
+
+Marked-up explanation, in brief.
+

@@ -135,8 +135,19 @@ class Background:
         if self.current_state == BackState.CITY:
             for pixel in self.city_image:
                 pixel.rect.x -= 3
-                
+                    
+class Star:
+    def __init__(self, startX, startY):
+        self.rect = Pixel(startX, startY)
+    
+    def draw(self):
+        self.rect.draw()
         
+    def update(self):
+        self.rect.rect.x -= 1
+        if self.rect.rect.x <= 3:
+            self.rect.rect.x = 800
+            self.rect.rect.y = random.randint(40, 150)        
 
 
 class Bullet:
@@ -366,7 +377,9 @@ player = NightStalker(400, 300)
 pen = Writer()
 bg_list = []
 victim_list = []
+starfield = [Star(random.randint(0, 798), random.randint(40, 150)) for i in range(30)]
 
+roadlines_list = [pygame.Rect(0, 400, 200, 2), pygame.Rect(400, 400, 200, 2), pygame.Rect(800, 400, 200, 2)]
 
 
 def die():
@@ -378,13 +391,18 @@ def die():
 def draw():
     for bgs in bg_list:
         bgs.draw()
+    for star in starfield:
+        star.draw()
     # Horizon Line
     pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 300, 800, 2))
     # Road lanes
     pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 350, 800, 2))
     pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 450, 800, 2))
+    for lines in roadlines_list:
+        pygame.draw.rect(SURFACE, ALL_LINES, lines)
     for victim in victim_list:
         victim.draw()
+        
     player.draw()
 
 def update():
@@ -411,12 +429,29 @@ def update():
         
         if victim.hit_box.right < 0:
             victim_list.remove(victim)
+        
+        for bullet in player.bullet_list:
+            if bullet.rect.colliderect(victim.hit_box):
+                player.score -= 500
+                player.bullet_list.remove(bullet)
+                victim_list.remove(victim)
+                if player.score < 0:
+                    player.current_state = HeroState.DEAD
+                    
+    for lines in roadlines_list:
+        lines.x -= 5
+        if lines.right <= 0:
+            lines.x = 1000
 
     # Objects' update methods go here
     for bgs in bg_list:
         bgs.update()
         if bgs.mount_image[-1].rect.x <= -50 or bgs.city_image[-1].rect.x <= -50:
             bg_list.remove(bgs)
+            
+    for star in starfield:
+        star.update()            
+    
 
 
     player.update()
