@@ -15,6 +15,15 @@ BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
 # Classes and Object Calls will go here
+class GUI:
+    # Management for score display and the life meter
+    def __init__(self):
+        self.life_rect = pygame.Rect(20, 60, 200, 30)
+
+    def draw(self):
+        pygame.draw.rect(SURFACE, ALL_LINES, self.life_rect)
+
+
 class Pixel:
     # To be used for all artwork
     def __init__(self, startX, startY, width = 2, height = 2):
@@ -35,6 +44,8 @@ class Bullet:
     def draw(self):
         pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
 
+
+
 class HeroState(Enum):
     LANDED = 0
     FLYING = 1
@@ -45,8 +56,9 @@ class NightStalker:
     def __init__(self, startX, startY):
         self.SPEED = 5
         self.current_state = HeroState.LANDED
-        self.health = 100
         self.score = 0
+
+        self.hit_box = pygame.Rect(startX, startY, 50, 26)
         self.blueprint = [["00000--------------------",
                           "-0---0--------0000-------",
                           "--0---0------0----00-----",
@@ -81,6 +93,8 @@ class NightStalker:
         self.fire_timer = 0
         self.COOLDOWN = 60
 
+        self.display = GUI()
+
         def build_cars():
             x, y = startX, startY
             for row in self.blueprint[0]:
@@ -104,19 +118,7 @@ class NightStalker:
         build_cars()
 
 
-    def draw(self):
-        if self.current_state == HeroState.LANDED:
-            for pixel in self.driving_mode:
-                pixel.draw()
-        elif self.current_state == HeroState.FLYING:
-            for pixel in self.flying_mode:
-                pixel.draw()
-        else:
-            for pixel in self.dead_car:
-                pixel.draw()
-
-        for bullet in self.bullet_list:
-            bullet.draw()
+    
         
 
     def move(self, axis, speed):
@@ -132,11 +134,39 @@ class NightStalker:
             if axis == "y":
                 pixel.rect.y += speed
 
+        if axis == "x":
+            self.hit_box.x += speed
+        if axis == "y":
+            self.hit_box.y += speed
+
+
+    def get_hit(self):
+        if self.current_state != HeroState.DEAD:
+            self.display.life_rect.width -= 10
+            if self.display.life_rect.width <= 0:
+                self.display.life_rect.width = 0
+    
+
+    def draw(self):
+        if self.current_state == HeroState.LANDED:
+            for pixel in self.driving_mode:
+                pixel.draw()
+        elif self.current_state == HeroState.FLYING:
+            for pixel in self.flying_mode:
+                pixel.draw()
+        else:
+            for pixel in self.dead_car:
+                pixel.draw()
+
+        for bullet in self.bullet_list:
+            bullet.draw()
+
+        self.display.draw()
+
 
     def update(self):
         KEYS = pygame.key.get_pressed()
-        print(self.fire_timer)
-
+       
         if self.current_state != HeroState.DEAD:
             if self.driving_mode[0].rect.y < 300:
                 self.current_state = HeroState.FLYING
@@ -144,6 +174,9 @@ class NightStalker:
             else:
                 self.current_state = HeroState.LANDED
                 self.dead_car = self.driving_mode
+
+            if self.display.life_rect.width <= 0:
+                self.current_state = HeroState.DEAD
 
 
         if self.current_state != HeroState.DEAD:
@@ -192,6 +225,12 @@ pygame.display.set_caption(NAME)
 # Game subroutines go here
 player = NightStalker(400, 300)
 
+
+killer_bullets = [Bullet(random.randint(800, 1000), random.randint(0, 580)) for i in range(40)]
+
+
+
+
 def die():
     confirm = pyautogui.confirm("Are you sure you want to exit to OS?", "Confirm", ["Yes", "No"])
     if confirm == "Yes":
@@ -199,6 +238,9 @@ def die():
         sys.exit(1)
 
 def draw():
+    for bullet in killer_bullets:
+        bullet.draw()
+
     player.draw()
 
 def update():
@@ -211,6 +253,17 @@ def update():
     draw()
 
     # Objects' update methods go here
+    for bullet in killer_bullets:
+        bullet.update()
+        bullet.SPEED = -8
+        if bullet.rect.x <= -10:
+            bullet.rect.x = random.randint(800, 1000)
+            bullet.rect.y = random.randint(0, 500)
+        if bullet.rect.colliderect(player.hit_box):
+            player.get_hit()
+            bullet.rect.x = random.randint(800, 1000)
+            bullet.rect.y = random.randint(0, 500)
+
     player.update()
     pygame.display.update()
     SURFACE.fill(BG)
