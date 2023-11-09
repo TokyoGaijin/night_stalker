@@ -19,6 +19,7 @@ CLOCK = pygame.time.Clock()
 FPS = 60
 NAME = "Night Stalker™ by Michael Yamazaki-Fleisher ©2023-2024"
 
+pygame.display.set_caption(NAME)
 
 # Game subroutines go here
 
