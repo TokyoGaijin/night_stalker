@@ -24,6 +24,17 @@ class Pixel:
         pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
 
 
+class Bullet:
+    def __init__(self, startX, startY):
+        self.rect = pygame.Rect(startX, startY, 10, 2)
+        self.SPEED = 8
+
+    def update(self):
+        self.rect.x += self.SPEED
+
+    def draw(self):
+        pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
+
 class HeroState(Enum):
     LANDED = 0
     FLYING = 1
@@ -64,8 +75,11 @@ class NightStalker:
         
         self.driving_mode = []
         self.flying_mode = []
-
         self.dead_car = self.driving_mode
+
+        self.bullet_list = []
+        self.fire_timer = 0
+        self.COOLDOWN = 60
 
         def build_cars():
             x, y = startX, startY
@@ -89,6 +103,7 @@ class NightStalker:
 
         build_cars()
 
+
     def draw(self):
         if self.current_state == HeroState.LANDED:
             for pixel in self.driving_mode:
@@ -99,6 +114,9 @@ class NightStalker:
         else:
             for pixel in self.dead_car:
                 pixel.draw()
+
+        for bullet in self.bullet_list:
+            bullet.draw()
         
 
     def move(self, axis, speed):
@@ -117,7 +135,7 @@ class NightStalker:
 
     def update(self):
         KEYS = pygame.key.get_pressed()
-        print(self.current_state)
+        print(self.fire_timer)
 
         if self.current_state != HeroState.DEAD:
             if self.driving_mode[0].rect.y < 300:
@@ -137,13 +155,32 @@ class NightStalker:
                 self.move("y", -self.SPEED)
             if KEYS[pygame.K_s]:
                 self.move("y", self.SPEED)
-            if KEYS[pygame.K_ESCAPE]:
-                self.current_state = HeroState.DEAD
+            if KEYS[pygame.K_SPACE]:
+                if self.fire_timer == 0 and len(self.bullet_list) < 3:
+                    self.bullet_list.append(Bullet(self.dead_car[37].rect.x - 5, self.dead_car[37].rect.y))
+                    self.fire_timer += 1
+            if not KEYS[pygame.K_SPACE]:
+                self.fire_timer = 0
 
         if self.current_state == HeroState.DEAD:
             for pixel in self.dead_car:
                 pixel.rect.x += random.randrange(-10, 11)
                 pixel.rect.y += 8
+
+        for bullet in self.bullet_list:
+            bullet.update()
+            if bullet.rect.x > 800:
+                self.bullet_list.remove(bullet)
+
+
+
+
+
+
+
+
+
+
 
 
 CLOCK = pygame.time.Clock()
