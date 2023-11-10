@@ -28,3 +28,13 @@ A general screenshot.
 
 Marked-up explanation, in brief.
 
+![Alt text](image-2.png)
+## Game Rules
+
+1. Life Bar = 200 width
+2. Shooting victims takes 500 points off
+3. Rescuing victims awards 250 points
+4. Killing enemies awards 47 points (thanks, *Star Trek*)
+5. Life-ups appear after 20 rescued victims
+6. Each victim that "escapes" restores 2 points of health to the health bar
+7. 

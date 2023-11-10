@@ -14,6 +14,12 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
+class Soundboard:
+    def __init__(self):
+        self.explosion = pygame.mixer.Sound("boom.wav")
+        self.hit = pygame.mixer.Sound("hit.wav")
+        self.victim_dies = pygame.mixer.Sound("victim_killed.wav")
+
 class GameState(Enum):
     TITLE = 0 # Title Screen
     MAIN = 1 # Main Gameplay
