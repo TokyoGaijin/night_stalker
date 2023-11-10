@@ -14,7 +14,13 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
-# Classes and Object Calls will go here
+class GameState(Enum):
+    TITLE = 0 # Title Screen
+    MAIN = 1 # Main Gameplay
+    TRANSITION = 2 # Transition of levels
+    GAME_OVER = 3 # Self Explanatory
+
+
 class Writer:
     def __init__(self):
         self.SIZE = 40
@@ -332,10 +338,10 @@ class HeroState(Enum):
 
 class NightStalker:
     # The Hero Class
-    def __init__(self, startX, startY):
+    def __init__(self, startX, startY, score = 0):
         self.speed = 5
         self.current_state = HeroState.LANDED
-        self.score = 0
+        self.score = score
         self.pen = Writer()
         self.hit_box = pygame.Rect(startX, startY, 50, 26)
         self.blueprint = [["00000--------------------",
@@ -372,6 +378,7 @@ class NightStalker:
         self.fire_timer = 0
         self.COOLDOWN = 60
         self.MAX_LIFE = 200
+        self.kill_count = 0
         
 
         self.display = GUI()
@@ -545,6 +552,31 @@ enemy_list = []
 starfield = [Star(random.randint(0, 798), random.randint(40, 150)) for i in range(30)]
 roadlines_list = [pygame.Rect(0, 400, 200, 2), pygame.Rect(400, 400, 200, 2), pygame.Rect(800, 400, 200, 2)]
 POW_list = []
+current_gameState = GameState.MAIN
+max_enemies = 3
+clear_count = 30
+
+
+def game_init(next_level = True):
+    global player, victim_list, enemy_list, POW_list, max_enemies, clear_count, current_gameState
+    victim_list, enemy_list, POW_list = [], [], []
+    if next_level:
+        new_score = player.score
+        player = NightStalker(400, 300, new_score)
+        max_enemies += 2
+        clear_count += 10
+    else:
+        player.score = 0
+        max_enemies = 3
+        player.kill_count = 0
+        clear_count = 30
+        player.victims_saved = 0
+        player = NightStalker(400, 300)
+        
+
+    
+    current_gameState = GameState.MAIN
+
 
 def die():
     confirm = pyautogui.confirm("Are you sure you want to exit to OS?", "Confirm", ["Yes", "No"])
@@ -553,29 +585,31 @@ def die():
         sys.exit(1)
 
 def draw():
-    for bgs in bg_list:
-        bgs.draw()
-    for star in starfield:
-        star.draw()
-    # Horizon Line
-    pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 300, 800, 2))
-    # Road lanes
-    pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 350, 800, 2))
-    pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 450, 800, 2))
-    for lines in roadlines_list:
-        pygame.draw.rect(SURFACE, ALL_LINES, lines)
-    for victim in victim_list:
-        victim.draw()
+    if current_gameState == GameState.MAIN:
+        for bgs in bg_list:
+            bgs.draw()
+        for star in starfield:
+            star.draw()
+        # Horizon Line
+        pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 300, 800, 2))
+        # Road lanes
+        pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 350, 800, 2))
+        pygame.draw.rect(SURFACE, ALL_LINES, pygame.Rect(0, 450, 800, 2))
+        for lines in roadlines_list:
+            pygame.draw.rect(SURFACE, ALL_LINES, lines)
+        for victim in victim_list:
+            victim.draw()
 
-    for enemy in enemy_list:
-        enemy.draw()
+        for enemy in enemy_list:
+            enemy.draw()
 
-    for pow in POW_list:
-        pow.draw()
-        
-    player.draw()
+        for pow in POW_list:
+            pow.draw()
+            
+        player.draw()
 
 def update():
+    global current_gameState
     CLOCK.tick(FPS)
     KEYS = pygame.key.get_pressed()
     for event in pygame.event.get():
@@ -584,98 +618,145 @@ def update():
     
     draw()
 
-    if len(bg_list) < 2:
-        bg_list.append(Background(startX = random.randint(900, 1200), state=random.choice([BackState.CITY, BackState.MOUNTAINS])))
-        bg_list.append(Background(startX = random.randint(1400, 2000), state=random.choice([BackState.CITY, BackState.MOUNTAINS])))
+    if current_gameState == GameState.MAIN:
+        if len(bg_list) < 2:
+            bg_list.append(Background(startX = random.randint(900, 1200), state=random.choice([BackState.CITY, BackState.MOUNTAINS])))
+            bg_list.append(Background(startX = random.randint(1400, 2000), state=random.choice([BackState.CITY, BackState.MOUNTAINS])))
 
-    if len(victim_list) < 4:
-        victim_list.append(Victim(random.randint(900, 2000), random.randint(350, 450)))
-        
-    for victim in victim_list:
-        victim.update()
-        if player.current_state != HeroState.DEAD:
-            if victim.hit_box.colliderect(player.hit_box):
-                player.victims_saved += 1
-                player.score += 250
-                victim_list.remove(victim)
-        
-        if victim.hit_box.right < 0:
-            victim_list.remove(victim)
-        
-        for bullet in player.bullet_list:
-            if bullet.rect.colliderect(victim.hit_box):
-                player.victims_saved -= 1
-                player.score -= 500
-                player.bullet_list.remove(bullet)
-                victim_list.remove(victim)
-                if player.score < 0:
-                    player.score = 0
-                    player.current_state = HeroState.DEAD
-                    
-    for lines in roadlines_list:
-        lines.x -= 5
-        if lines.right <= 0:
-            lines.x = 1000
-
-    # Objects' update methods go here
-    for bgs in bg_list:
-        bgs.update()
-        if bgs.mount_image[-1].rect.x <= -50 or bgs.city_image[-1].rect.x <= -50:
-            bg_list.remove(bgs)
+        if len(victim_list) < 4:
+            victim_list.append(Victim(random.randint(900, 2000), random.randint(350, 450)))
             
-    for star in starfield:
-        star.update()            
-    
-    if len(enemy_list) < 3:
-        enemy_list.append(Enemy(random.randint(900, 1200), random.choice([EnemyType.BIKE, EnemyType.PLANE])))
-
-    for enemy in enemy_list:
-        enemy.update()
-        if enemy.hitbox.colliderect(player.hit_box):
-            player.get_hit(damage = 20)
-            enemy.current_state = EnemyState.DEAD
-        if enemy.hitbox.right <= 0:
-            enemy_list.remove(enemy)
-        for bullet in enemy.bullet_list:
-            for victim in victim_list:
-                if bullet.rect.colliderect(victim.hit_box):
+        for victim in victim_list:
+            victim.update()
+            if player.current_state != HeroState.DEAD:
+                if victim.hit_box.colliderect(player.hit_box):
+                    player.victims_saved += 1
+                    player.score += 250
                     victim_list.remove(victim)
-                    enemy.bullet_list.remove(bullet)
-            if bullet.rect.colliderect(player.hit_box):
-                enemy.bullet_list.remove(bullet)
-                player.get_hit()
-        for bullet in player.bullet_list:
-            if bullet.rect.colliderect(enemy.hitbox):
-                player.bullet_list.remove(bullet)
-                player.score += enemy.points
-                enemy.current_state = EnemyState.DEAD
+            
+            if victim.hit_box.right < 0:
+                victim_list.remove(victim)
+                player.display.life_rect.width += 5
+                player.victims_saved += 1
+            
+            for bullet in player.bullet_list:
+                if bullet.rect.colliderect(victim.hit_box):
+                    player.victims_saved -= 1
+                    player.score -= 500
+                    player.bullet_list.remove(bullet)
+                    try:
+                        victim_list.remove(victim)
+                        if player.score < 0:
+                            player.score = 0
+                            player.current_state = HeroState.DEAD
+                    except ValueError:
+                        pass
+                        
+        for lines in roadlines_list:
+            lines.x -= 5
+            if lines.right <= 0:
+                lines.x = 1000
+
+        # Objects' update methods go here
+        for bgs in bg_list:
+            bgs.update()
+            if bgs.mount_image[-1].rect.x <= -50 or bgs.city_image[-1].rect.x <= -50:
+                bg_list.remove(bgs)
+                
+        for star in starfield:
+            star.update()            
         
-        if enemy.current_state == EnemyState.DEAD:
-            if enemy.enemy_type == EnemyType.BIKE:
-                if enemy.bike[0].rect.x >= 800:
-                    enemy_list.remove(enemy)
-            if enemy.enemy_type == EnemyType.PLANE:
-                if enemy.plane[0].rect.x >= 800:
-                    enemy_list.remove(enemy)
+        if len(enemy_list) < max_enemies:
+            enemy_list.append(Enemy(random.randint(900, 1200), random.choice([EnemyType.BIKE, EnemyType.PLANE])))
+
+        for enemy in enemy_list:
+            enemy.update()
+            if enemy.hitbox.colliderect(player.hit_box):
+                player.get_hit(damage = 20)
+                player.kill_count += 1
+                enemy.current_state = EnemyState.DEAD
+            if enemy.hitbox.right <= 0:
+                enemy_list.remove(enemy)
             for bullet in enemy.bullet_list:
-                enemy.bullet_list.remove(bullet)
+                for victim in victim_list:
+                    if bullet.rect.colliderect(victim.hit_box):
+                        try:
+                            victim_list.remove(victim)
+                            enemy.bullet_list.remove(bullet)
+                            player.display.life_rect.width -= 5
+                        except ValueError:
+                            pass
+                if bullet.rect.colliderect(player.hit_box):
+                    enemy.bullet_list.remove(bullet)
+                    player.get_hit()
+            for bullet in player.bullet_list:
+                if bullet.rect.colliderect(enemy.hitbox):
+                    player.bullet_list.remove(bullet)
+                    player.score += enemy.points
+                    player.kill_count += 1
+                    enemy.current_state = EnemyState.DEAD
+            
+            if enemy.current_state == EnemyState.DEAD:
+                if enemy.enemy_type == EnemyType.BIKE:
+                    if enemy.bike[0].rect.x >= 800:
+                        enemy_list.remove(enemy)
+                if enemy.enemy_type == EnemyType.PLANE:
+                    if enemy.plane[0].rect.x >= 800:
+                        enemy_list.remove(enemy)
+                for bullet in enemy.bullet_list:
+                    enemy.bullet_list.remove(bullet)
 
-    if player.victims_saved % 20 == 0 and player.victims_saved != 0:
-        if len(POW_list) < 1:
-            POW_list.append(Pow(900, player.hit_box.y))
+        if player.victims_saved % 20 == 0 and player.victims_saved != 0:
+            if len(POW_list) < 1:
+                POW_list.append(Pow(900, player.hit_box.y))
 
-    for pow in POW_list:
-        pow.update()
-        if pow.hitbox.colliderect(player.hit_box):
-            player.display.life_rect.width = player.MAX_LIFE
-            POW_list.remove(pow)
-        if pow.hitbox.right <= 0:
-            POW_list.remove(pow)
+        for pow in POW_list:
+            pow.update()
+            if pow.hitbox.colliderect(player.hit_box):
+                player.display.life_rect.width = player.MAX_LIFE
+                POW_list.remove(pow)
+            if pow.hitbox.right <= 0:
+                POW_list.remove(pow)
 
-    
-    print(player.victims_saved)
+        if player.display.life_rect.width >= 200:
+            player.display.life_rect.width = 200
+        
+        if player.kill_count >= clear_count:
+            current_gameState = GameState.TRANSITION
 
-    player.update()
+        if player.current_state == HeroState.DEAD:
+            if player.dead_car[0].rect.top > 800:
+                current_gameState = GameState.GAME_OVER
+
+        player.update()
+
+    if current_gameState == GameState.TRANSITION:
+        line_0 = "Well Done!"
+        line_1 = f"Victims Saved: {player.victims_saved}"
+        line_2 = "Choose an Option!"
+        choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}", "Well Done!", ["Go to Next Level", "Play from Beginning", "Quit to OS"])
+        if choice == "Go to Next Level":
+            game_init()
+        elif choice == "Play from Beginning":
+            game_init(False)
+        else:
+            die()
+            
+
+    if current_gameState == GameState.GAME_OVER:
+        line_0 = "You're Dead!"
+        line_1 = f"Your Final Score: {player.score}"
+        line_2 = f"Victims Saved: {player.victims_saved}"
+        line_3 = "Choose an Option"
+        choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}\n{line_3}", "GAME OVER!!", ["Register High Score", "Start Again", "Quit to OS"])
+        if choice == "Register High Score":
+            pyautogui.alert("That option has not been implemented yet", "Under Construction")
+        elif choice == "Start Again":
+            game_init(False)
+        else:
+            die()
+
+
     pygame.display.update()
     SURFACE.fill(BG)
 
