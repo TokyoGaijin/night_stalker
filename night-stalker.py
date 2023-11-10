@@ -44,6 +44,44 @@ class Pixel:
         pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
 
 
+class Pow:
+    def __init__(self, startX, startY):
+        self.hitbox = pygame.Rect(startX, startY, 20, 20)
+        self.pow = []
+        self.blueprint = ["--000000--",
+                          "-00--0000-",
+                          "000--00000",
+                          "000--00000",
+                          "000--00000",
+                          "000--00000",
+                          "000--00000",
+                          "000-----00",
+                          "-00000000-",
+                          "--000000--"]
+        
+        self.SPEED = 6
+        def build_pow():
+            x, y = startX, startY
+            for row in self.blueprint:
+                for col in row:
+                    if col == "0":
+                        self.pow.append(Pixel(x, y))
+                    x += 2
+
+                y += 2
+                x = startX
+        
+        build_pow()
+
+    def draw(self):
+        for pixel in self.pow:
+            pixel.draw()
+
+    def update(self):
+        for pixel in self.pow:
+            pixel.rect.x -= self.SPEED
+        self.hitbox.x -= self.SPEED
+
 class BackState(Enum):
     CITY = 0
     MOUNTAINS = 1
@@ -151,15 +189,139 @@ class Star:
 
 
 class Bullet:
-    def __init__(self, startX, startY):
+    def __init__(self, startX, startY, vertical = False):
         self.rect = pygame.Rect(startX, startY, 10, 2)
-        self.SPEED = 8
+        self.vertical = vertical
+        self.SPEED = 6
 
     def update(self):
-        self.rect.x += self.SPEED
+        if self.vertical:
+            self.rect.y -= self.SPEED # Speed is being overridden somewhere so the signs must be flipped
+        else:
+            self.rect.x += self.SPEED
+
 
     def draw(self):
         pygame.draw.rect(SURFACE, ALL_LINES, self.rect)
+
+
+class EnemyState(Enum):
+    ALIVE = 0
+    DEAD = 1
+
+class EnemyType(Enum):
+    BIKE = 0
+    PLANE = 1
+
+class Enemy:
+    def __init__(self, startX, enemy_type):
+        if enemy_type == EnemyType.BIKE:
+            startY = random.randint(350, 424)
+        if enemy_type == EnemyType.PLANE:
+            startY = random.randint(50, 274)
+        self.speed = random.randint(3, 6)
+        self.direction = ["left", "right"]
+        self.hitbox = pygame.Rect(startX, startY, 50, 26)
+        self.blueprint = [["-------------------------",
+                           "--------000--------------",
+                           "--------00000------------",
+                           "000------0000------------",
+                           "--0000000000-------------",
+                           "---00000000---0000000000-",
+                           "---0----000---0000000----",
+                           "----0---000---0000000----",
+                           "----00000000000----------",
+                           "----0000000000000000-----",
+                           "---00---------------00---",
+                           "-00--00-----------00--00-",
+                           "---00---------------00---",],
+
+                          ["-------------------000000",
+                           "-------------------00000^",
+                           "-----------------000000--",
+                           "---------------0000000---",
+                           "--------0000000000000----",
+                           "-----0---0000000000000---",
+                           "--000000000000000000000--",
+                           "----000000000000000000---",
+                           "-------0000000000000000--",
+                           "----------00000000000----",
+                           "------------0000000000---",
+                           "---------------00000000--",
+                           "-------------00000000000-",]]
+        self.current_state = EnemyState.ALIVE
+        self.bike = []
+        self.plane = []
+        self.bullet_list = []
+        self.fire_timer = 0
+        self.COOLDOWN = 60
+        self.points = 47
+        
+        def build_bad_guys():
+            x, y = startX, startY
+            for row in self.blueprint[0]:
+                for col in row:
+                    if col == "0":
+                        self.bike.append(Pixel(x, y))
+                    x += 2
+                y += 2
+                x = startX
+
+            y = startY
+
+            for row in self.blueprint[1]:
+                for col in row:
+                    if col == "0":
+                        self.plane.append(Pixel(x, y))
+                    x += 2
+                y += 2
+                x = startX
+
+        build_bad_guys()
+        self.enemy_type = enemy_type
+
+    def draw(self):
+        if self.enemy_type == EnemyType.BIKE:
+            for pixel in self.bike:
+                pixel.draw()
+        if self.enemy_type == EnemyType.PLANE:
+            for pixel in self.plane:
+                pixel.draw()
+        for bullet in self.bullet_list:
+            bullet.draw()
+
+    def update(self):
+        self.fire_timer += 1
+        if self.current_state == EnemyState.ALIVE:
+            if self.fire_timer % self.COOLDOWN == 0:
+                if self.enemy_type == EnemyType.BIKE:
+                    self.bullet_list.append(Bullet(self.hitbox.x, self.hitbox.y + 8))
+                if self.enemy_type == EnemyType.PLANE:
+                    self.bullet_list.append(Bullet(self.hitbox.x + 26, self.hitbox.y + 24, vertical = random.choice([True, False])))
+        
+            for bullet in self.bullet_list:
+                bullet.update()
+                bullet.SPEED = -8 # to go the other way
+                if bullet.rect.right < 0 or bullet.rect.top > 450:
+                    self.bullet_list.remove(bullet)
+
+            if self.enemy_type == EnemyType.BIKE:
+                for pixel in self.bike:
+                    pixel.rect.x -= self.speed
+            if self.enemy_type == EnemyType.PLANE:
+                for pixel in self.plane:
+                    pixel.rect.x -= self.speed
+
+            self.hitbox.x -= self.speed
+
+        if self.current_state == EnemyState.DEAD:
+            if self.enemy_type == EnemyType.BIKE:
+                for pixel in self.bike:
+                    pixel.rect.x += random.randint(4, 10)
+            if self.enemy_type == EnemyType.PLANE:
+                for pixel in self.plane:
+                    pixel.rect.x += random.randint(4, 10)
+            self.hitbox.x = 9000
 
 
 
@@ -174,7 +336,7 @@ class NightStalker:
         self.speed = 5
         self.current_state = HeroState.LANDED
         self.score = 0
-        pen = Writer()
+        self.pen = Writer()
         self.hit_box = pygame.Rect(startX, startY, 50, 26)
         self.blueprint = [["00000--------------------",
                           "-0---0--------0000-------",
@@ -205,10 +367,11 @@ class NightStalker:
         self.driving_mode = []
         self.flying_mode = []
         self.dead_car = self.driving_mode
-
+        self.victims_saved = 0
         self.bullet_list = []
         self.fire_timer = 0
         self.COOLDOWN = 60
+        self.MAX_LIFE = 200
         
 
         self.display = GUI()
@@ -254,9 +417,9 @@ class NightStalker:
             self.hit_box.y += speed
 
 
-    def get_hit(self):
+    def get_hit(self, damage = 0):
         if self.current_state != HeroState.DEAD:
-            self.display.life_rect.width -= 10
+            self.display.life_rect.width -= 10 + damage
             if self.display.life_rect.width <= 0:
                 self.display.life_rect.width = 0
     
@@ -313,6 +476,7 @@ class NightStalker:
             for pixel in self.dead_car:
                 pixel.rect.x += random.randrange(-10, 11)
                 pixel.rect.y += 8
+            self.hit_box.x = 9000
 
         for bullet in self.bullet_list:
             bullet.update()
@@ -377,10 +541,10 @@ player = NightStalker(400, 300)
 pen = Writer()
 bg_list = []
 victim_list = []
+enemy_list = []
 starfield = [Star(random.randint(0, 798), random.randint(40, 150)) for i in range(30)]
-
 roadlines_list = [pygame.Rect(0, 400, 200, 2), pygame.Rect(400, 400, 200, 2), pygame.Rect(800, 400, 200, 2)]
-
+POW_list = []
 
 def die():
     confirm = pyautogui.confirm("Are you sure you want to exit to OS?", "Confirm", ["Yes", "No"])
@@ -402,6 +566,12 @@ def draw():
         pygame.draw.rect(SURFACE, ALL_LINES, lines)
     for victim in victim_list:
         victim.draw()
+
+    for enemy in enemy_list:
+        enemy.draw()
+
+    for pow in POW_list:
+        pow.draw()
         
     player.draw()
 
@@ -423,19 +593,23 @@ def update():
         
     for victim in victim_list:
         victim.update()
-        if victim.hit_box.colliderect(player.hit_box):
-            player.score += 250
-            victim_list.remove(victim)
+        if player.current_state != HeroState.DEAD:
+            if victim.hit_box.colliderect(player.hit_box):
+                player.victims_saved += 1
+                player.score += 250
+                victim_list.remove(victim)
         
         if victim.hit_box.right < 0:
             victim_list.remove(victim)
         
         for bullet in player.bullet_list:
             if bullet.rect.colliderect(victim.hit_box):
+                player.victims_saved -= 1
                 player.score -= 500
                 player.bullet_list.remove(bullet)
                 victim_list.remove(victim)
                 if player.score < 0:
+                    player.score = 0
                     player.current_state = HeroState.DEAD
                     
     for lines in roadlines_list:
@@ -452,7 +626,54 @@ def update():
     for star in starfield:
         star.update()            
     
+    if len(enemy_list) < 3:
+        enemy_list.append(Enemy(random.randint(900, 1200), random.choice([EnemyType.BIKE, EnemyType.PLANE])))
 
+    for enemy in enemy_list:
+        enemy.update()
+        if enemy.hitbox.colliderect(player.hit_box):
+            player.get_hit(damage = 20)
+            enemy.current_state = EnemyState.DEAD
+        if enemy.hitbox.right <= 0:
+            enemy_list.remove(enemy)
+        for bullet in enemy.bullet_list:
+            for victim in victim_list:
+                if bullet.rect.colliderect(victim.hit_box):
+                    victim_list.remove(victim)
+                    enemy.bullet_list.remove(bullet)
+            if bullet.rect.colliderect(player.hit_box):
+                enemy.bullet_list.remove(bullet)
+                player.get_hit()
+        for bullet in player.bullet_list:
+            if bullet.rect.colliderect(enemy.hitbox):
+                player.bullet_list.remove(bullet)
+                player.score += enemy.points
+                enemy.current_state = EnemyState.DEAD
+        
+        if enemy.current_state == EnemyState.DEAD:
+            if enemy.enemy_type == EnemyType.BIKE:
+                if enemy.bike[0].rect.x >= 800:
+                    enemy_list.remove(enemy)
+            if enemy.enemy_type == EnemyType.PLANE:
+                if enemy.plane[0].rect.x >= 800:
+                    enemy_list.remove(enemy)
+            for bullet in enemy.bullet_list:
+                enemy.bullet_list.remove(bullet)
+
+    if player.victims_saved % 20 == 0 and player.victims_saved != 0:
+        if len(POW_list) < 1:
+            POW_list.append(Pow(900, player.hit_box.y))
+
+    for pow in POW_list:
+        pow.update()
+        if pow.hitbox.colliderect(player.hit_box):
+            player.display.life_rect.width = player.MAX_LIFE
+            POW_list.remove(pow)
+        if pow.hitbox.right <= 0:
+            POW_list.remove(pow)
+
+    
+    print(player.victims_saved)
 
     player.update()
     pygame.display.update()
