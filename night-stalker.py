@@ -14,6 +14,9 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
+## TODO: Complete the mixer class and time sound effects, below
+## TODO: Download more sounds or engineer
+
 class Soundboard:
     def __init__(self):
         self.explosion = pygame.mixer.Sound("boom.wav")
