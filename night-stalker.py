@@ -15,6 +15,30 @@ BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
 
+class Scoreboard():
+    def __init__(self):
+        self.conn = sqlite3.connect('masterbase.db')
+        self.score_list = []
+        self.scores = []
+        self.c = self.conn.cursor()
+        self.c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
+        self.pen = Writer()
+        self.score_font = pygame.font.Font("consola.ttf")
+
+    def retrieve(self):
+        top_scores = self.c.execute("SELECT NAME, SCORE from HighScores ORDER BY score DESC LIMIT 10").fetchall()
+        self.conn.close()
+        for rank, (name, score) in enumerate(top_scores, start=1):
+            self.score_list.append(f"{rank}. {name}: {score}")
+
+        for score in self.score_list:
+            print(score)
+
+    def show_list(self):
+        print("FUCK YOU!!")
+
+
+
 # TODO: High Scores DB 
 # TODO: Title Screen with high score display
 # TODO: BGM (?)
@@ -55,6 +79,11 @@ class GUI:
     def draw(self):
         pen.write("LIFE", (20, 18))
         pygame.draw.rect(SURFACE, ALL_LINES, self.life_rect)
+
+
+class TitleScreen:
+    def __init__(self):
+        pass
 
 
 class Pixel:
@@ -572,9 +601,13 @@ starfield = [Star(random.randint(0, 798), random.randint(40, 150)) for i in rang
 roadlines_list = [pygame.Rect(0, 400, 200, 2), pygame.Rect(400, 400, 200, 2), pygame.Rect(800, 400, 200, 2)]
 POW_list = []
 SOUNDBOARD = Soundboard()
-current_gameState = GameState.MAIN
+current_gameState = GameState.TITLE
 max_enemies = 3
 clear_count = 30
+
+scorecard = Scoreboard()
+
+scorecard.retrieve()
 
 
 def game_init(next_level = True):
@@ -628,6 +661,10 @@ def draw():
             pow.draw()
             
         player.draw()
+
+
+    if current_gameState == GameState.TITLE:
+        scorecard.show_list()
 
 def update():
     global current_gameState
