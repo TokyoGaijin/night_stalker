@@ -2,7 +2,6 @@ import pygame
 from pygame import mixer
 from enum import Enum
 import random
-import time
 import sys
 import pyautogui
 import sqlite3
@@ -14,8 +13,10 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
-## TODO: Complete the mixer class and time sound effects, below
-## TODO: Download more sounds or engineer
+
+# TODO: High Scores DB 
+# TODO: Title Screen with high score display
+# TODO: BGM (?)
 
 class Soundboard:
     def __init__(self):
