@@ -14,28 +14,10 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
+conn = sqlite3.connect('masterbase.db')
+c = conn.cursor()
+c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
 
-class Scoreboard():
-    def __init__(self):
-        self.conn = sqlite3.connect('masterbase.db')
-        self.score_list = []
-        self.scores = []
-        self.c = self.conn.cursor()
-        self.c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
-        self.pen = Writer()
-        self.score_font = pygame.font.Font("consola.ttf")
-
-    def retrieve(self):
-        top_scores = self.c.execute("SELECT NAME, SCORE from HighScores ORDER BY score DESC LIMIT 10").fetchall()
-        self.conn.close()
-        for rank, (name, score) in enumerate(top_scores, start=1):
-            self.score_list.append(f"{rank}. {name}: {score}")
-
-        for score in self.score_list:
-            print(score)
-
-    def show_list(self):
-        print("FUCK YOU!!")
 
 
 
@@ -62,9 +44,9 @@ class GameState(Enum):
 
 
 class Writer:
-    def __init__(self):
-        self.SIZE = 40
-        self.FONT = pygame.font.Font("ARCADECLASSIC.TTF", self.SIZE)
+    def __init__(self, font = "ARCADECLASSIC.TTF", size = 40):
+        self.SIZE = size
+        self.FONT = pygame.font.Font(font, self.SIZE)
         
     def write(self, string_to_write, coords):
         showtext = self.FONT.render(string_to_write, self.SIZE, ALL_LINES)
@@ -605,10 +587,6 @@ current_gameState = GameState.TITLE
 max_enemies = 3
 clear_count = 30
 
-scorecard = Scoreboard()
-
-scorecard.retrieve()
-
 
 def game_init(next_level = True):
     global player, victim_list, enemy_list, POW_list, max_enemies, clear_count, current_gameState
@@ -664,7 +642,7 @@ def draw():
 
 
     if current_gameState == GameState.TITLE:
-        scorecard.show_list()
+        pass
 
 def update():
     global current_gameState
