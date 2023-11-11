@@ -14,11 +14,89 @@ SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
 ALL_LINES = (255, 255, 255)
 
-conn = sqlite3.connect('masterbase.db')
-c = conn.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
 
-
+class Scoreboard:
+    def __init__(self):
+        self.conn = sqlite3.connect('masterbase.db')
+        self.c = self.conn.cursor()
+        self.c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
+        self.scores = []
+        self.pen = Writer(font="consola.ttf", size=20)
+        self.game_pen = Writer()
+        
+    def submit(self, name, score):
+        self.c.execute(f'INSERT INTO HighScores(NAME, SCORE) VALUES ("{name}", {score})')
+        self.conn.commit()
+        
+    def reset(self):
+        self.submit("Michael", 19000)
+        self.submit("Nakaya", 18000)
+        self.submit("Sabato", 17000)
+        self.submit("Gaia", 16000)
+        self.submit("Tateishi", 15000)
+        self.submit("Imai", 14000)
+        self.submit("Sakita", 13000)
+        self.submit("Allan", 12000)
+        self.submit("Sakita", 11000)
+        self.submit("Jackson", 10000)
+        self.submit("Shiwa", 9000)
+        
+    def register(self, score):
+        user_name = pyautogui.prompt("Please enter your name.")
+        self.submit(user_name, score)
+        
+    def draw(self):
+        score_list = []
+        self.scores = self.c.execute("SELECT NAME, SCORE FROM HighScores ORDER BY SCORE DESC LIMIT 10").fetchall()
+        for i in range(len(self.scores)):
+            rank = i + 1
+            score_list.append(f"{rank}: {self.scores[i][0]} {self.scores[i][1]}")
+        
+        self.game_pen.write("PRESS ENTER", (300, 550))
+        self.game_pen.write("HIGH SCORES", (280, 260))
+        for i, score in enumerate(score_list):
+            self.pen.write(score, (300, 300 + i * 20))
+        
+        
+class Title:
+    def __init__(self, startX, startY):
+        self.blueprint = ["00-----0----00-----000000-----00---00----00000000---------------------------------------------------",
+                          "000----0----00----00-----0----00---00-------00------------------------------------------------------",
+                          "0-00---0----00----00----------00---00-------00------------------------------------------------------",
+                          "0--00--0----00----00--0000----0000000-------00------------------------------------------------------",
+                          "0---00-0----00----00----00----00---00-------00------------------------------------------------------",
+                          "0----000----00----00----00----00---00-------00------------------------------------------------------",
+                          "0-----00----00-----000000-----00---00-------00------------------------------------------------------",
+                          "----------------------------------------------------------------------------------------------------",
+                          "----------------------000000-----00000000-----00000-----00---------00---00----0000000----0000000----",
+                          "--------------------00------0-------00-------00---00----00---------00--00-----00---------00----00---",
+                          "--------------------000-------------00-------00---00----00---------00-00------00---------00-----00--",
+                          "-----------------------000----------00-------0000000----00---------0000-------00000------00-----00--",
+                          "------------------------000---------00-------00---00----00---------0000-------00---------00000000---",
+                          "-------------------------000--------00-------00---00----00---------00-00------00---------00-----00--",
+                          "--------------------00-----00-------00-------00---00----00---------00--00-----00---------00-----00--",
+                          "----------------------00000---------00-------00---00----0000000----00---00----0000000----00-----00--",
+                          "----------------------------------------------------------------------------------------------------",
+                          "000-0-0--000------0--00---00--0--00--000------0---00--000-0--0--0--0------00-0-0--0---0--000-000-00-",
+                          "-0--0-0--0-------0-0-0-0-0---0-0-0-0-0-------0-0-0-----0--0-0-0-00-0-----0---0-0-0-0-0-0--0--0---0-0",
+                          "-0--000--00------000-000-0---000-0-0-00------000-0-----0--0-0-0-0-00------0--000-0-0-0-0--0--00--000",
+                          "-0--0-0--000-----0-0-0-0--00-0-0-00--000-----0-0--00---0--0--0--0--0-----000-0-0--0---0---0--000-0-0",]
+        
+        self.title_list = []
+        def build():
+            x, y = startX, startY
+            for row in self.blueprint:
+                for col in row:
+                    if col == "0":
+                        self.title_list.append(Pixel(x, y, width = 5, height = 5))
+                    x += 5
+                y += 5
+                x = startX
+        build()
+        
+    def draw(self):
+        for pixel in self.title_list:
+            pixel.draw()
 
 
 # TODO: High Scores DB 
@@ -586,6 +664,8 @@ SOUNDBOARD = Soundboard()
 current_gameState = GameState.TITLE
 max_enemies = 3
 clear_count = 30
+scoreboard = Scoreboard()
+title = Title(150, 50)
 
 
 def game_init(next_level = True):
@@ -642,7 +722,8 @@ def draw():
 
 
     if current_gameState == GameState.TITLE:
-        pass
+        scoreboard.draw()
+        title.draw()
 
 def update():
     global current_gameState
@@ -653,6 +734,19 @@ def update():
             die()
     
     draw()
+
+    if current_gameState == GameState.TITLE:
+        if KEYS[pygame.K_RETURN]:
+            game_init(False)
+            current_gameState = GameState.MAIN
+        if KEYS[pygame.K_LCTRL] and KEYS[pygame.K_r]:
+            confirm = pyautogui.confirm("Are you sure you want to reset the high scores?", "Confirm Reset", ["Yes", "No"])
+            if confirm == "Yes":
+                blanks = pyautogui.confirm("Would you like to restore the default placeholders?", "Placeholder Restore", ["Yes", "No"])
+                scoreboard.c.execute("DELETE FROM HighScores;",)
+                if blanks == "Yes":
+                    scoreboard.reset()
+                scoreboard.conn.commit()
 
     if current_gameState == GameState.MAIN:
         if len(bg_list) < 2:
@@ -781,7 +875,7 @@ def update():
         if choice == "Go to Next Level":
             game_init()
         elif choice == "Play from Beginning":
-            game_init(False)
+            current_gameState = GameState.TITLE
         else:
             die()
             
@@ -793,9 +887,10 @@ def update():
         line_3 = "Choose an Option"
         choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}\n{line_3}", "GAME OVER!!", ["Register High Score", "Start Again", "Quit to OS"])
         if choice == "Register High Score":
-            pyautogui.alert("That option has not been implemented yet", "Under Construction")
+            scoreboard.register(player.score)
+            current_gameState = GameState.TITLE
         elif choice == "Start Again":
-            game_init(False)
+            current_gameState = GameState.TITLE
         else:
             die()
 
