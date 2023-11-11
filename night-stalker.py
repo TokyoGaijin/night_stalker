@@ -22,6 +22,11 @@ class Soundboard:
         self.explosion = pygame.mixer.Sound("boom.wav")
         self.hit = pygame.mixer.Sound("hit.wav")
         self.victim_dies = pygame.mixer.Sound("victim_killed.wav")
+        self.fire = pygame.mixer.Sound("laser.mp3")
+        self.rescue = pygame.mixer.Sound("rescue.mp3")
+
+    def play(self, sound):
+        sound.play()
 
 class GameState(Enum):
     TITLE = 0 # Title Screen
@@ -388,6 +393,7 @@ class NightStalker:
         self.COOLDOWN = 60
         self.MAX_LIFE = 200
         self.kill_count = 0
+        self.soundman = Soundboard()
         
 
         self.display = GUI()
@@ -483,6 +489,7 @@ class NightStalker:
                 self.move("y", self.speed)
             if KEYS[pygame.K_SPACE]:
                 if self.fire_timer == 0 and len(self.bullet_list) < 3:
+                    self.soundman.play(self.soundman.fire)
                     self.bullet_list.append(Bullet(self.dead_car[37].rect.x - 5, self.dead_car[37].rect.y))
                     self.fire_timer += 1
             if not KEYS[pygame.K_SPACE]:
@@ -561,6 +568,7 @@ enemy_list = []
 starfield = [Star(random.randint(0, 798), random.randint(40, 150)) for i in range(30)]
 roadlines_list = [pygame.Rect(0, 400, 200, 2), pygame.Rect(400, 400, 200, 2), pygame.Rect(800, 400, 200, 2)]
 POW_list = []
+SOUNDBOARD = Soundboard()
 current_gameState = GameState.MAIN
 max_enemies = 3
 clear_count = 30
@@ -581,6 +589,7 @@ def game_init(next_level = True):
         clear_count = 30
         player.victims_saved = 0
         player = NightStalker(400, 300)
+    player.kill_count = 0
         
 
     
@@ -639,6 +648,7 @@ def update():
             victim.update()
             if player.current_state != HeroState.DEAD:
                 if victim.hit_box.colliderect(player.hit_box):
+                    SOUNDBOARD.play(SOUNDBOARD.rescue)
                     player.victims_saved += 1
                     player.score += 250
                     victim_list.remove(victim)
@@ -654,6 +664,7 @@ def update():
                     player.score -= 500
                     player.bullet_list.remove(bullet)
                     try:
+                        SOUNDBOARD.play(SOUNDBOARD.victim_dies)
                         victim_list.remove(victim)
                         if player.score < 0:
                             player.score = 0
@@ -681,6 +692,7 @@ def update():
         for enemy in enemy_list:
             enemy.update()
             if enemy.hitbox.colliderect(player.hit_box):
+                SOUNDBOARD.play(SOUNDBOARD.explosion)
                 player.get_hit(damage = 20)
                 player.kill_count += 1
                 enemy.current_state = EnemyState.DEAD
@@ -690,16 +702,19 @@ def update():
                 for victim in victim_list:
                     if bullet.rect.colliderect(victim.hit_box):
                         try:
+                            SOUNDBOARD.play(SOUNDBOARD.victim_dies)
                             victim_list.remove(victim)
                             enemy.bullet_list.remove(bullet)
                             player.display.life_rect.width -= 5
                         except ValueError:
                             pass
                 if bullet.rect.colliderect(player.hit_box):
+                    SOUNDBOARD.play(SOUNDBOARD.hit)
                     enemy.bullet_list.remove(bullet)
                     player.get_hit()
             for bullet in player.bullet_list:
                 if bullet.rect.colliderect(enemy.hitbox):
+                    SOUNDBOARD.play(SOUNDBOARD.explosion)
                     player.bullet_list.remove(bullet)
                     player.score += enemy.points
                     player.kill_count += 1
@@ -723,6 +738,7 @@ def update():
             pow.update()
             if pow.hitbox.colliderect(player.hit_box):
                 player.display.life_rect.width = player.MAX_LIFE
+                SOUNDBOARD.play(SOUNDBOARD.victim_dies)
                 POW_list.remove(pow)
             if pow.hitbox.right <= 0:
                 POW_list.remove(pow)
@@ -730,7 +746,7 @@ def update():
         if player.display.life_rect.width >= 200:
             player.display.life_rect.width = 200
         
-        if player.kill_count >= clear_count:
+        if player.kill_count >= clear_count and player.current_state != HeroState.DEAD:
             current_gameState = GameState.TRANSITION
 
         if player.current_state == HeroState.DEAD:

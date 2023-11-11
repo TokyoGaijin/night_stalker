@@ -37,4 +37,5 @@ Marked-up explanation, in brief.
 4. Killing enemies awards 47 points (thanks, *Star Trek*)
 5. Life-ups appear after 20 rescued victims
 6. Each victim that "escapes" restores 2 points of health to the health bar
-7. 
+7. "Plane" enemies shoot booth "forward" and "bomb" in an attempt to kill victims
+8. On that note, enemies kill victims
