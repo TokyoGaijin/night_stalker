@@ -8,6 +8,7 @@ import sqlite3
 
 pygame.init() # for fonts and sounds
 
+
 SCREEN = (800, 600)
 SURFACE = pygame.display.set_mode(SCREEN)
 BG = (0, 0, 0)
@@ -515,7 +516,7 @@ class NightStalker:
         if self.dead_car[-1].rect.bottom > 454:
             self.current_state = HeroState.DEAD
             
-        pen.write(f"SCORE {self.score}", (550,18))
+        pen.write(f"SCORE    {self.score}", (400,18))
 
 class Victim:
     def __init__(self, startX, startY):
@@ -559,6 +560,7 @@ FPS = 60
 NAME = "Night Stalker™ by Michael Yamazaki-Fleisher ©2023-2024"
 
 pygame.display.set_caption(NAME)
+pygame.mouse.set_visible(False)
 
 # Game subroutines go here
 player = NightStalker(400, 300)
