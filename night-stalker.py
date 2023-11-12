@@ -568,16 +568,16 @@ class NightStalker:
             if self.display.life_rect.width <= 0:
                 self.current_state = HeroState.DEAD
 
-
+        print(self.dead_car[0].rect.y)
         if self.current_state != HeroState.DEAD:
             if KEYS[pygame.K_a]:
-                self.move("x", -self.speed)
+                self.move("x", -self.speed) if self.hit_box.left >= 0 else self.speed - 0
             if KEYS[pygame.K_d]:
-                self.move("x", self.speed)
+                self.move("x", self.speed) if self.hit_box.right <= 800 else self.speed - 0
             if KEYS[pygame.K_w]:
-                self.move("y", -self.speed)
+                self.move("y", -self.speed) if self.hit_box.top >= 60 else self.speed - 0
             if KEYS[pygame.K_s]:
-                self.move("y", self.speed)
+                self.move("y", self.speed) if self.hit_box.bottom <= 450 else self.speed - 0
             if KEYS[pygame.K_SPACE]:
                 if self.fire_timer == 0 and len(self.bullet_list) < 3:
                     self.soundman.play(self.soundman.fire)
@@ -596,11 +596,6 @@ class NightStalker:
             bullet.update()
             if bullet.rect.x > 800:
                 self.bullet_list.remove(bullet)
-                
-        if self.dead_car[-1].rect.bottom >= 450 and KEYS[pygame.K_s]:
-            self.speed = 0
-        else:
-            self.speed = 5
             
         if self.dead_car[-1].rect.bottom > 454:
             self.current_state = HeroState.DEAD
