@@ -568,7 +568,6 @@ class NightStalker:
             if self.display.life_rect.width <= 0:
                 self.current_state = HeroState.DEAD
 
-        print(self.dead_car[0].rect.y)
         if self.current_state != HeroState.DEAD:
             if KEYS[pygame.K_a]:
                 self.move("x", -self.speed) if self.hit_box.left >= 0 else self.speed - 0
