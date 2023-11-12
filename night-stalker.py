@@ -19,43 +19,43 @@ class Scoreboard:
     def __init__(self):
         self.conn = sqlite3.connect('masterbase.db')
         self.c = self.conn.cursor()
-        self.c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int)")
+        self.c.execute("CREATE TABLE IF NOT EXISTS HighScores(NAME text, SCORE int, LEVEL int)")
         self.scores = []
         self.pen = Writer(font="consola.ttf", size=20)
         self.game_pen = Writer()
         
-    def submit(self, name, score):
-        self.c.execute(f'INSERT INTO HighScores(NAME, SCORE) VALUES ("{name}", {score})')
+    def submit(self, name, score, level):
+        self.c.execute(f'INSERT INTO HighScores(NAME, SCORE, LEVEL) VALUES ("{name}", {score}, {level})')
         self.conn.commit()
         
     def reset(self):
-        self.submit("Michael", 19000)
-        self.submit("Nakaya", 18000)
-        self.submit("Sabato", 17000)
-        self.submit("Gaia", 16000)
-        self.submit("Tateishi", 15000)
-        self.submit("Imai", 14000)
-        self.submit("Sakita", 13000)
-        self.submit("Allan", 12000)
-        self.submit("Sakita", 11000)
-        self.submit("Jackson", 10000)
-        self.submit("Shiwa", 9000)
+        self.submit("Michael", 19000, 1)
+        self.submit("Nakaya", 18000, 1)
+        self.submit("Sabato", 17000, 1)
+        self.submit("Gaia", 16000, 1)
+        self.submit("Tateishi", 15000, 1)
+        self.submit("Imai", 14000, 1)
+        self.submit("Sakita", 13000, 1)
+        self.submit("Allan", 12000, 1)
+        self.submit("Sakita", 11000, 1)
+        self.submit("Jackson", 10000, 1)
+        self.submit("Shiwa", 9000, 1)
         
-    def register(self, score):
+    def register(self, score, level):
         user_name = pyautogui.prompt("Please enter your name.")
-        self.submit(user_name, score)
+        self.submit(user_name, score, level)
         
     def draw(self):
         score_list = []
-        self.scores = self.c.execute("SELECT NAME, SCORE FROM HighScores ORDER BY SCORE DESC LIMIT 10").fetchall()
+        self.scores = self.c.execute("SELECT NAME, SCORE, LEVEL FROM HighScores ORDER BY SCORE DESC LIMIT 10").fetchall()
         for i in range(len(self.scores)):
             rank = i + 1
-            score_list.append(f"{rank}: {self.scores[i][0]} {self.scores[i][1]}")
+            score_list.append(f"{rank}: {self.scores[i][0]} {self.scores[i][1]} Level: {self.scores[i][2]}")
         
         self.game_pen.write("PRESS ENTER", (300, 550))
         self.game_pen.write("HIGH SCORES", (280, 260))
         for i, score in enumerate(score_list):
-            self.pen.write(score, (300, 300 + i * 20))
+            self.pen.write(score, (250, 300 + i * 20))
         
         
 class Title:
@@ -99,10 +99,6 @@ class Title:
             pixel.draw()
 
 
-# TODO: High Scores DB 
-# TODO: Title Screen with high score display
-# TODO: BGM (?)
-
 class Soundboard:
     def __init__(self):
         self.explosion = pygame.mixer.Sound("boom.wav")
@@ -139,11 +135,6 @@ class GUI:
     def draw(self):
         pen.write("LIFE", (20, 18))
         pygame.draw.rect(SURFACE, ALL_LINES, self.life_rect)
-
-
-class TitleScreen:
-    def __init__(self):
-        pass
 
 
 class Pixel:
@@ -660,6 +651,7 @@ max_enemies = 3
 clear_count = 30
 scoreboard = Scoreboard()
 title = Title(150, 50)
+level = 1
 
 
 def game_init(next_level = True):
@@ -720,7 +712,7 @@ def draw():
         title.draw()
 
 def update():
-    global current_gameState
+    global current_gameState, level
     CLOCK.tick(FPS)
     KEYS = pygame.key.get_pressed()
     for event in pygame.event.get():
@@ -862,26 +854,18 @@ def update():
         player.update()
 
     if current_gameState == GameState.TRANSITION:
-        line_0 = "Well Done!"
-        line_1 = f"Victims Saved: {player.victims_saved}"
-        line_2 = "Choose an Option!"
-        choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}", "Well Done!", ["Go to Next Level", "Play from Beginning", "Quit to OS"])
-        if choice == "Go to Next Level":
-            game_init()
-        elif choice == "Play from Beginning":
-            current_gameState = GameState.TITLE
-        else:
-            die()
-            
+        level += 1
+        game_init()          
 
     if current_gameState == GameState.GAME_OVER:
         line_0 = "You're Dead!"
         line_1 = f"Your Final Score: {player.score}"
         line_2 = f"Victims Saved: {player.victims_saved}"
-        line_3 = "Choose an Option"
-        choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}\n{line_3}", "GAME OVER!!", ["Register High Score", "Start Again", "Quit to OS"])
+        line_3 = f"Finished at: Level {level}"
+        line_4 = "Choose an Option"
+        choice = pyautogui.confirm(f"{line_0}\n{line_1}\n{line_2}\n{line_3}\n\n{line_4}", "GAME OVER!!", ["Register High Score", "Start Again", "Quit to OS"])
         if choice == "Register High Score":
-            scoreboard.register(player.score)
+            scoreboard.register(player.score, level)
             current_gameState = GameState.TITLE
         elif choice == "Start Again":
             current_gameState = GameState.TITLE
